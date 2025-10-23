@@ -14,16 +14,18 @@ source config.sh
 CUDA_VISIBLE_DEVICES=$CUDA_GPUS vllm serve $MODEL \
   --port $PORT \
   --no-enable-prefix-caching \
-  --data-parallel-size $NUM_GPUS \
-  --enable-expert-parallel \
+  --tensor-parallel-size $NUM_GPUS \
   --max-num-seqs 128 \
-  --max-model-len 8192 \
+  --max-model-len 16384 \
   
-  # --tensor-parallel-size $NUM_GPUS \
+  #--quantization="modelopt_fp4" \
+  # --data-parallel-size $NUM_GPUS \
+  # --enable-expert-parallel \
   
   
   
-  # --quantization="modelopt_fp4"
+  
+  
 
 
   

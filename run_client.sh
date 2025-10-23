@@ -13,7 +13,8 @@ vllm bench serve \
         --seed $(date +%s) \
         --percentile-metrics ttft,tpot,itl,e2el \
         --metric-percentiles 90,95,99 \
-        --ignore-eos
+        --ignore-eos \
+        --trust-remote-code
 
 
 

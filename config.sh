@@ -4,10 +4,10 @@ export VLLM_DIR="/home/alexm/code/vllm"
 export PORT=8123
 export BASE_URL="http://0.0.0.0:"$PORT
 
-# export CUDA_GPUS=0,1,2,3,4,5,6,7
-# export NUM_GPUS=8
-export CUDA_GPUS=4,5,6,7
-export NUM_GPUS=4
+export CUDA_GPUS=0,1,2,3,4,5,6,7
+export NUM_GPUS=8
+# export CUDA_GPUS=4,5,6,7
+# export NUM_GPUS=4
 # export CUDA_GPUS=7
 # export NUM_GPUS=1
 
@@ -17,14 +17,22 @@ export NUM_GPUS=4
 export MODEL=deepseek-ai/DeepSeek-R1-0528
 # export MODEL=nvidia/DeepSeek-R1-FP4
 # export MODEL=openai/gpt-oss-120b
+# export MODEL=deepseek-ai/DeepSeek-V2-Lite
 
 
 ## DeepSeek flags
 # export FORCE_NUM_KV_SPLITS=1
 # export VLLM_USE_FLASHINFER_MOE_FP4=1
+# export VLLM_DISABLE_SHARED_EXPERTS_STREAM=1
 export VLLM_USE_FLASHINFER_MOE_FP8=1
 export VLLM_FLASHINFER_MOE_BACKEND="latency"
+# export VLLM_FLASHINFER_MOE_BACKEND="throughput"
 # export VLLM_ATTENTION_BACKEND=CUTLASS_MLA
+
+# Enable nccl symm memory allreduce
+# export VLLM_USE_NCCL_SYMM_MEM=1
+# export NCCL_NVLS_ENABLE=1
+# export NCCL_CUMEM_ENABLE=1
 
 ## GPTOSS flags
 # Pick only one out of the two for MoE implementation
@@ -34,7 +42,7 @@ export VLLM_FLASHINFER_MOE_BACKEND="latency"
 # export VLLM_USE_FLASHINFER_MOE_MXFP4_MXFP8=1 
        
 # Enable profiler
-# export VLLM_TORCH_PROFILER_DIR=/home/alexm/profiles
+export VLLM_TORCH_PROFILER_DIR=/home/alexm/profiles
 
 ## Prompt-only
 # export INPUT_LEN=8192
