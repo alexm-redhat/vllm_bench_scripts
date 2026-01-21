@@ -9,8 +9,18 @@ source config.sh
 # 	--tensor-parallel-size ${NUM_GPUS} \
 
 
-# VLLM_WORKER_MULTIPROC_METHOD="spawn" VLLM_MOE_DP_CHUNK_SIZE=128 VLLM_USE_STANDALONE_COMPILE=0
-# GPTOSS
+# CUDA_VISIBLE_DEVICES=$CUDA_GPUS python -m sglang.launch_server \
+#   --model-path $MODEL \
+#   --port $PORT \
+#   --disable-chunked-prefix-cache \
+#   --tensor-parallel-size $NUM_GPUS \
+#   --max-running-requests 128 \
+#   --max-total-tokens 32768 \
+#   --mem-fraction-static 0.9 \
+#   --quantization modelopt_fp4 \
+
+
+
 CUDA_VISIBLE_DEVICES=$CUDA_GPUS vllm serve $MODEL \
   --port $PORT \
   --no-enable-prefix-caching \
