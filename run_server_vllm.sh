@@ -11,6 +11,8 @@ CUDA_VISIBLE_DEVICES=$CUDA_GPUS vllm serve $MODEL \
   --tensor-parallel-size $NUM_GPUS \
   --async-scheduling \
   -cc.pass_config.fuse_allreduce_rms=True \
+  --quantization="modelopt_fp4" \
+
 
 # TRTLLM PREFILL
 #--attention-config.use_trtllm_ragged_deepseek_prefill=True

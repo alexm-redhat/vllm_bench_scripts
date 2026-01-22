@@ -4,7 +4,7 @@ export BASE_URL="http://0.0.0.0:"$PORT
 
 ## GPUS
 # export CUDA_GPUS=0,1,2,3,4,5,6,7
-export CUDA_GPUS=0,1,2,3
+export CUDA_GPUS=3,4,5,6
 
 export NUM_GPUS=$(echo "$CUDA_GPUS" | awk -F',' '{print NF}')
 
