@@ -33,9 +33,6 @@ export VLLM_ATTENTION_BACKEND=FLASHINFER_MLA
 # export VLLM_USE_FLASHINFER_MXFP4_BF16_MOE=1 
 # mxfp8 activation for MoE. faster, but higher risk for accuracy.
 # export VLLM_USE_FLASHINFER_MOE_MXFP4_MXFP8=1 
-       
-## Profiler
-export SGLANG_TORCH_PROFILER_DIR=/home/alexm-redhat/profiles
 
 ## Prompt-only
 # export INPUT_LEN=8192

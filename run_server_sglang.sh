@@ -2,6 +2,10 @@
 
 source config.sh
 
+## Profiler
+export SGLANG_TORCH_PROFILER_DIR=/home/alexm-redhat/profiles/sglang_traces
+
+## Run
 CUDA_VISIBLE_DEVICES=$CUDA_GPUS python -m sglang.launch_server \
   --model-path $MODEL \
   --port $PORT \
