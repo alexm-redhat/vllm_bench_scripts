@@ -4,7 +4,7 @@ export BASE_URL="http://0.0.0.0:"$PORT
 
 ## GPUS
 # export CUDA_GPUS=0,1,2,3,4,5,6,7
-export CUDA_GPUS=3,4,5,6
+export CUDA_GPUS=0,1,2,3
 
 export NUM_GPUS=$(echo "$CUDA_GPUS" | awk -F',' '{print NF}')
 
@@ -25,7 +25,7 @@ export VLLM_USE_FLASHINFER_MOE_FP4=1
 export VLLM_FLASHINFER_MOE_BACKEND="latency"
 
 # export VLLM_ATTENTION_BACKEND=CUTLASS_MLA
-export VLLM_ATTENTION_BACKEND=FLASHINFER_MLA
+export VLLM_ATTN_BACKEND=FLASHINFER_MLA
 
 ## GPTOSS Flags
 # Pick only one out of the two for MoE implementation
