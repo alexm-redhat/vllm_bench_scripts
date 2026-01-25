@@ -1,21 +1,20 @@
 #!/bin/bash
 
-source config.sh
-
-DIR="/path/to/your/directory"
+source trt_config.sh
 
 # Sanity check
-if [ -d "$PROFILES_DIR" ]; then
-    echo "Directory found: $PROFILES_DIR"
+if [ -d "$WORK_DIR" ]; then
+    echo "Directory found: $WORK_DIR"
 else
-    echo "Error: Directory not found - $PROFILES_DIR"
+    echo "Error: Directory not found - $WORK_DIR"
     echo "Exiting script."
     exit 1
 fi
 
-# Create dirs
-echo "Create directory: $WORK_DIR"
-mkdir ${WORK_DIR}
+# Clean workdir
+echo "Clean directory: ${WORK_DIR}"
+rm -rf $WORK_DIR/*
+
 echo "Create directory: ${WORK_DIR}/${DATASET_DIR}"
 mkdir ${WORK_DIR}/${DATASET_DIR}
 echo "Create directory: ${WORK_DIR}/${MODEL_DIR}"
@@ -26,7 +25,7 @@ echo "Prepare TRT dataset for:"
 echo "  MODEL      = ${MODEL}"
 echo "  INPUT_LEN  = ${INPUT_LEN}"
 echo "  OUTPUT_LEN = ${OUTPUT_LEN}"
-python3 benchmarks/cpp/prepare_dataset.py \
+python3 /app/tensorrt_llm/benchmarks/cpp/prepare_dataset.py \
 	--tokenizer=${MODEL} \
 	--stdout token-norm-dist \
 	--num-requests=${NUM_SAMPLES} \
