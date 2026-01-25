@@ -1,10 +1,10 @@
 ## IP/PORT
-export PORT=8123
+export PORT=30000
 export BASE_URL="http://0.0.0.0:"$PORT
 
 ## GPUS
 # export CUDA_GPUS=0,1,2,3,4,5,6,7
-export CUDA_GPUS=0,1,2,3
+export CUDA_GPUS=4,5,6,7
 
 export NUM_GPUS=$(echo "$CUDA_GPUS" | awk -F',' '{print NF}')
 
@@ -47,8 +47,12 @@ export OUTPUT_LEN=1024
 # export NUM_PROMPTS=5
 
 ## B16
-export CONCURRENCY=16
-export NUM_PROMPTS=64
+# export CONCURRENCY=16
+# export NUM_PROMPTS=64
+
+## B32
+export CONCURRENCY=32
+export NUM_PROMPTS=96
 
 ## B256
 # export CONCURRENCY=256
