@@ -26,6 +26,6 @@ python3 /app/tensorrt_llm/benchmarks/cpp/prepare_dataset.py \
 	--input-mean=${INPUT_LEN} \
 	--output-mean=${OUTPUT_LEN} \
 	--input-stdev=0 \
-	--output-stdev=0 > ${WORK_DIR}/${DATASET}/rand_dataset_isl_${INPUT_LEN}_osl_${OUTPUT_LEN}.txt
+	--output-stdev=0 > ${WORK_DIR}/${DATASET_DIR}/rand_dataset_isl_${INPUT_LEN}_osl_${OUTPUT_LEN}.txt
 
 
