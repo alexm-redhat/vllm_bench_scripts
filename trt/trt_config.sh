@@ -5,8 +5,8 @@ export TRT_IMAGE=nvcr.io/nvidia/tensorrt-llm/release:1.3.0rc0
 export MODEL=nvidia/DeepSeek-R1-NVFP4
 
 # GPUs
-export CUDA_GPUS=4,5,6,7
-export NUM_GPUS=$(echo "$CUDA_GPUS" | awk -F',' '{print NF}')
+export CUDA_VISIBLE_DEVICES=4,5,6,7
+export NUM_GPUS=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
 
 
 # Dataset
