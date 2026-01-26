@@ -1,30 +1,24 @@
 #!/bin/bash
 
+source utils.sh
 source trt_config.sh
 
 # Sanity check
-if [ -d "$WORK_DIR" ]; then
-    echo "Directory found: $WORK_DIR"
-else
-    echo "Error: Directory not found - $WORK_DIR"
-    echo "Exiting script."
-    exit 1
-fi
+create_dir_if_missing $WORK_DIR
 
 # Clean workdir
-echo "Clean directory: ${WORK_DIR}"
+log_info "Clean directory: ${WORK_DIR}"
 rm -rf $WORK_DIR/*
 
-echo "Create directory: ${WORK_DIR}/${DATASET_DIR}"
-mkdir ${WORK_DIR}/${DATASET_DIR}
-echo "Create directory: ${WORK_DIR}/${MODEL_DIR}"
-mkdir ${WORK_DIR}/${MODEL_DIR}
+create_dir_if_missing ${WORK_DIR}/${DATASET_DIR}
+create_dir_if_missing ${WORK_DIR}/${MODEL_DIR}
 
 # Run prepare dataset
-echo "Prepare TRT dataset for:"
-echo "  MODEL      = ${MODEL}"
-echo "  INPUT_LEN  = ${INPUT_LEN}"
-echo "  OUTPUT_LEN = ${OUTPUT_LEN}"
+log_info "Prepare TRT dataset for:"
+log_info "  MODEL      = ${MODEL}"
+log_info "  INPUT_LEN  = ${INPUT_LEN}"
+log_info "  OUTPUT_LEN = ${OUTPUT_LEN}"
+
 python3 /app/tensorrt_llm/benchmarks/cpp/prepare_dataset.py \
 	--tokenizer=${MODEL} \
 	--stdout token-norm-dist \

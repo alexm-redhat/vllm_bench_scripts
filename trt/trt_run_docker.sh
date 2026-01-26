@@ -19,6 +19,7 @@ docker run \
 	--env "HF_HUB_CACHE=/root/hf_hub_cache" \
 	-p 30000:30000 \
 	--name $CONTAINER_NAME \
+	--runtime nvidia \
 	--rm \
 	$TRT_IMAGE \
 	bash -c "cd $CONTAINER_TRT_DIR; time ./trt_run.sh"

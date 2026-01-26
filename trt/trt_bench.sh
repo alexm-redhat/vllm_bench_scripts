@@ -1,19 +1,22 @@
 #!/bin/bash
 
+source utils.sh
 source trt_config.sh
 
-echo "Create: extra_llm_api_options.yaml"
-cat > ${WORK_DIR}/${MODEL_DIR}/extra_llm_api_options.yaml <<EOF
+YAML_FILE=${WORK_DIR}/${MODEL_DIR}/extra_llm_api_options.yaml
+
+log_info "Create: $YAML_FILE"
+cat > $YAML_FILE <<EOF
 moe_config:
   backend: TRTLLM
 EOF
 
-echo "Run bench:"
+log_info "Run bench:"
 for CONCURRENCY in $CONCURRENCY_LIST; do
     ((NUM_REQUESTS = CONCURRENCY * 4))
     
-    echo "  Run iter:"
-    echo "    CONCURRENCY = ${CONCURRENCY}"
+    log_info "  Run iter:"
+    log_info "    CONCURRENCY = ${CONCURRENCY}"
 
     $PROFILE trtllm-bench \
         --model $MODEL \

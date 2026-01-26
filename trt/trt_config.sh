@@ -1,5 +1,5 @@
 # TRT
-export TRT_IMAGE=nvcr.io/nvidia/tensorrt-llm/release:1.2.0rc8
+export TRT_IMAGE=nvcr.io/nvidia/tensorrt-llm/release:1.3.0rc0
 
 # Model
 export MODEL=nvidia/DeepSeek-R1-NVFP4
