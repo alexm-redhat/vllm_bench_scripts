@@ -40,9 +40,9 @@ create_dir_if_missing() {
     return 0
   fi
 
-  log_info "  -- Directory does not exist, attempting to create: $dir"
+  log_info "  -- Directory does not exist, create: $dir"
 
-  mkdir -p "$dir" || {
+  mkdir "$dir" || {
     log_error "  -- Failed to create directory: $dir"
     return 1
   }

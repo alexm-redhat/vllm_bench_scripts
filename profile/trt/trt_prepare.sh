@@ -1,17 +1,16 @@
 #!/bin/bash
 
 source utils.sh
-source trt_config.sh
+source trt/trt_config.sh
 
-# Sanity check
-create_dir_if_missing $WORK_DIR
+# Create clean dirs
+create_dir_if_missing ${TRT_RESULTS_DIR}
 
-# Clean workdir
-log_info "Clean directory: ${WORK_DIR}"
-rm -rf $WORK_DIR/*
+log_info "Clean directory: ${TRT_RESULTS_DIR}"
+rm -rf ${TRT_RESULTS_DIR}/*
 
-create_dir_if_missing ${WORK_DIR}/${DATASET_DIR}
-create_dir_if_missing ${WORK_DIR}/${MODEL_DIR}
+create_dir_if_missing ${TRT_RESULTS_DIR}/${DATASET_DIR}
+create_dir_if_missing ${TRT_RESULTS_DIR}/${MODEL_DIR}
 
 # Run prepare dataset
 log_info "Prepare TRT dataset for:"
@@ -26,6 +25,6 @@ python3 /app/tensorrt_llm/benchmarks/cpp/prepare_dataset.py \
 	--input-mean=${INPUT_LEN} \
 	--output-mean=${OUTPUT_LEN} \
 	--input-stdev=0 \
-	--output-stdev=0 > ${WORK_DIR}/${DATASET_DIR}/rand_dataset_isl_${INPUT_LEN}_osl_${OUTPUT_LEN}.txt
+	--output-stdev=0 > ${TRT_RESULTS_DIR}/${DATASET_DIR}/rand_dataset_isl_${INPUT_LEN}_osl_${OUTPUT_LEN}.txt
 
 

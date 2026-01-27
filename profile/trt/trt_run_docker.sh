@@ -1,5 +1,5 @@
 #!/bin/bash
-source trt_config.sh
+source trt/trt_config.sh
 
 CONTAINER_NAME=trt_alex
 
@@ -14,12 +14,11 @@ docker run \
 	--ulimit memlock=-1 \
 	--ulimit stack=67108864 \
 	--gpus=all \
-	-v $HOST_TRT_DIR:$CONTAINER_TRT_DIR \
+	-v $WORK_DIR:$CONTAINER_DIR \
 	-v $HF_HUB_CACHE:/root/hf_hub_cache \
 	--env "HF_HUB_CACHE=/root/hf_hub_cache" \
 	-p 30000:30000 \
 	--name $CONTAINER_NAME \
-	--runtime nvidia \
 	--rm \
 	$TRT_IMAGE \
-	bash -c "cd $CONTAINER_TRT_DIR; time ./trt_run.sh"
+	bash -c "cd $CONTAINER_DIR; time ./trt_run.sh"
