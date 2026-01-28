@@ -6,7 +6,7 @@ if [[ -z "${1:-}" ]]; then
 fi
 
 source utils.sh
-source vllm/config_$1.sh
+source vllm/vllm_config_$1.sh
 
 export ATTN_BACKEND=""
 if [[ -n "$VLLM_ATTN_BACKEND" ]]; then  

@@ -22,7 +22,7 @@ for CONCURRENCY in ${CONCURRENCY_LIST}; do
         --model ${MODEL} \
         throughput \
         --extra_llm_api_options ${YAML_FILE} \
-        --dataset ${DATASET_DIR}/rand_dataset_isl_${INPUT_LEN}_osl_${OUTPUT_LEN}.txt \
+        --dataset ${TRT_RESULTS_DIR}/${DATASET_DIR}/rand_dataset_isl_${INPUT_LEN}_osl_${OUTPUT_LEN}.txt \
         --num_requests ${NUM_REQUESTS} \
         --concurrency ${CONCURRENCY} \
         --tp ${NUM_GPUS} \
