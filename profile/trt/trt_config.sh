@@ -1,7 +1,7 @@
 
 source config.sh
 
-# TRT
+# TRT Image
 export TRT_IMAGE=nvcr.io/nvidia/tensorrt-llm/release:1.3.0rc0
 
 # Dataset

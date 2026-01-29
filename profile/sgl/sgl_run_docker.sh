@@ -1,5 +1,5 @@
 #!/bin/bash
-source trt/trt_config.sh
+source sgl/sgl_config.sh
 
 CONTAINER_NAME=sgl_alex
 
@@ -15,10 +15,16 @@ docker run \
 	--ulimit stack=67108864 \
 	--gpus=all \
 	-v $WORK_DIR:$CONTAINER_DIR \
-	-v $HF_HUB_CACHE:/root/hf_hub_cache \
-	--env "HF_HUB_CACHE=/root/hf_hub_cache" \
+	-v $HF_HUB_CACHE:/app/hf_hub_cache \
+	--env "HF_HUB_CACHE=/app/hf_hub_cache" \
 	-p 30000:30000 \
 	--name $CONTAINER_NAME \
 	--rm \
-	$SGL_IMAGE \
-	bash -c "cd $CONTAINER_DIR; time ./trt_run.sh"
+	--shm-size 32g \
+	$SGL_IMAGE
+	
+	
+	
+	# bash -c "cd $CONTAINER_DIR; time ./sgl/sgl_run.sh"
+
+
