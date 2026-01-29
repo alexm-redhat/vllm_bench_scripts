@@ -3,7 +3,8 @@
 source utils.sh
 source sgl/sgl_config.sh
 
-# Create clean dirs
+# Create dirs
+create_dir_if_missing ${RESULTS_DIR}
 create_dir_if_missing ${CUR_RESULTS_DIR}
 
 log_info "Clean directory: ${CUR_RESULTS_DIR}"

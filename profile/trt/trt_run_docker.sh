@@ -21,5 +21,7 @@ docker run \
 	--name $CONTAINER_NAME \
 	--rm \
 	$TRT_IMAGE \
-	bash -c "cd $CONTAINER_DIR; time ./trt/trt_run.sh"
+	
+	
+	# bash -c "cd $CONTAINER_DIR; time ./trt/trt_run.sh"
 

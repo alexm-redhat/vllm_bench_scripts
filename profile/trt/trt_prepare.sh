@@ -3,7 +3,8 @@
 source utils.sh
 source trt/trt_config.sh
 
-# Create clean dirs
+# Create dirs
+create_dir_if_missing ${RESULTS_DIR}
 create_dir_if_missing ${TRT_RESULTS_DIR}
 
 log_info "Clean directory: ${TRT_RESULTS_DIR}"
