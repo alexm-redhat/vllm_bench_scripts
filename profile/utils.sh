@@ -47,3 +47,8 @@ create_dir_if_missing() {
     return 1
   }
 }
+
+run() {
+    echo "+ $*"
+    "$@"
+}

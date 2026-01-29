@@ -18,7 +18,7 @@ for CONCURRENCY in ${CONCURRENCY_LIST}; do
     log_info "  Run iter:"
     log_info "    CONCURRENCY = ${CONCURRENCY}"
 
-    $PROFILE trtllm-bench \
+    $PROFILE run trtllm-bench \
         --model ${MODEL} \
         throughput \
         --extra_llm_api_options ${YAML_FILE} \

@@ -21,10 +21,7 @@ docker run \
 	--name $CONTAINER_NAME \
 	--rm \
 	--shm-size 32g \
-	$SGL_IMAGE
-	
-	
-	
-	# bash -c "cd $CONTAINER_DIR; time ./sgl/sgl_run.sh"
+	$CUR_IMAGE \
+	bash -c "cd $CONTAINER_DIR; time ./sgl/sgl_run.sh"
 
 

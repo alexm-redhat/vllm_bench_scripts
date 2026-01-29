@@ -24,7 +24,7 @@ for CONCURRENCY in $CONCURRENCY_LIST; do
     log_info "  Run iter:"
     log_info "    CONCURRENCY = ${CONCURRENCY}"
 
-    vllm bench throughput \
+    run vllm bench throughput \
         --disable-log-requests \
         --async-engine \
         --backend vllm \
