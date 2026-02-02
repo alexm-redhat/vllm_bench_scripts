@@ -1,13 +1,13 @@
 
-source config.sh
+source gen_config.sh
+source profile_config.sh
+source utils.sh
 
 # SGL Image
-export CUR_IMAGE=lmsysorg/sglang:latest
+DOCKER_IMAGE=lmsysorg/sglang:latest
 
-# Dirs
-export CONTAINER_DIR="/app/profile"
-export CUR_RESULTS_DIR="${CONTAINER_DIR}/${RESULTS_DIR}/sgl"
-export TRACES_DIR="traces"
+# Output dir
+DOCKER_RESULTS_DIR="${DOCKER_PROFILE_DIR}/${RESULTS_DIR}/sgl"
 
 # Profile
-export ENABLE_PROFILE=1
+ENABLE_PROFILE=0

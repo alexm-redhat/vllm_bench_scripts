@@ -1,15 +1,13 @@
 #!/bin/bash
 source trt/trt_config.sh
 
-CONTAINER_NAME=trt_alex
+CONTAINER_NAME="trt_auto_profile_${USER}"
 
-if docker container inspect $CONTAINER_NAME >/dev/null 2>&1; then
-	docker container stop $CONTAINER_NAME
-	docker container rm $CONTAINER_NAME
-fi
+remove_docker_if_exists $CONTAINER_NAME
 
 docker run \
 	-it \
+	--rm \
 	--ipc=host \
 	--ulimit memlock=-1 \
 	--ulimit stack=67108864 \
@@ -19,7 +17,6 @@ docker run \
 	--env "HF_HUB_CACHE=/app/hf_hub_cache" \
 	-p 30000:30000 \
 	--name $CONTAINER_NAME \
-	--rm \
 	$TRT_IMAGE \
 	
 	

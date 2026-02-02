@@ -3,52 +3,72 @@
 source utils.sh
 source sgl/sgl_config.sh
 
-log_info "Run bench:"
-for CONCURRENCY in ${CONCURRENCY_LIST}; do
-    ((NUM_REQUESTS = CONCURRENCY * 4))
+log_info "Run profiles:"
+for p in "${PROFILES[@]}"; do
+    declare -n profile="$p"
+    model=${profile[model]}
+    gpu_ids=${profile[gpu_ids]}
+    input_len=${profile[input_len]}
+    output_len=${profile[output_len]}
+    log_info "  Profiling:"
+    log_info "    model      = ${model}"
+    log_info "    gpu_ids    = ${gpu_ids}"
+    log_info "    input_len  = ${input_len}"
+    log_info "    output_len = ${output_len}"
+
+    num_gpus=$(echo "${gpu_ids}" | awk -F',' '{print NF}')
+    model_dir=$(echo "${model}" | sed 's/\//__/g')
+
+    output_dir=${DOCKER_RESULTS_DIR}/${model_dir}
+    create_dir_if_missing ${output_dir}
     
-    log_info "  Run iter:"
-    log_info "    CONCURRENCY = ${CONCURRENCY}"
-
-    # Process profile args (if needed)
-    PROFILE=""
-    PROFILE_ACTS=""
-    PROFILE_STAGE=""
-    export SGLANG_TORCH_PROFILER_DIR=""
-    if [[ -v ENABLE_PROFILE && "$ENABLE_PROFILE" == "1" ]]; then
-        log_info "Profile is enabled. Defining env vars."
-        set -x
+    for concurrency in ${PROFILE_CONCURRENCIES}; do
+        ((num_requests = concurrency * 4))
         
-        # Enable profile
-        PROFILE="--profile"
+        log_info "      Run concurrency = ${concurrency}"
 
-        # By default, torch profiler is used, enable this to use NSYS (TODO: Fix file placement)
-        # PROFILE_ACTS="--profile-activities CUDA_PROFILER"
+        # Process profile args (if needed)
+        PROFILE_FLAG=""
+        PROFILE_ACTS=""
+        PROFILE_STAGE=""
+        export SGLANG_TORCH_PROFILER_DIR=""
+        if [[ -v ENABLE_PROFILE && "$ENABLE_PROFILE" == "1" ]]; then
+            log_info "Profile is enabled. Defining env vars."
+            set -x
+            
+            # Enable profile
+            PROFILE_FLAG="--profile"
 
-        # Set profile stage
-        PROFILE_STAGE="--profile-stage=decode" # Can be either all, prefill or decode
-        
-        # Set profile output dir
-        export SGLANG_TORCH_PROFILER_DIR="${CUR_RESULTS_DIR}/${MODEL_DIR}/${TRACES_DIR}/sgl_trace_tp__${NUM_GPUS}_batch__${CONCURRENCY}_isl__${INPUT_LEN}_osl__${OUTPUT_LEN}"
-        
-        set +x
-        create_dir_if_missing ${SGLANG_TORCH_PROFILER_DIR}
-        log_info "Clean directory: ${SGLANG_TORCH_PROFILER_DIR}"
-        rm -rf ${SGLANG_TORCH_PROFILER_DIR}/*
-    fi
+            # By default, torch profiler is used, enable this to use NSYS (TODO: Fix file placement)
+            # PROFILE_ACTS="--profile-activities CUDA_PROFILER"
 
-    # Run
-    run python -m sglang.bench_one_batch \
-        --model-path ${MODEL} \
-        --tp $NUM_GPUS \
-        --max-running-requests ${CONCURRENCY} \
-        --batch ${CONCURRENCY} \
-        --input-len ${INPUT_LEN} \
-        --output-len ${OUTPUT_LEN} \
-        --result-filename ${CUR_RESULTS_DIR}/${MODEL_DIR}/sgl_bench_tp__${NUM_GPUS}_batch__${CONCURRENCY}_isl__${INPUT_LEN}_osl__${OUTPUT_LEN}.json \
-        $PROFILE \
-        $PROFILE_ACTS \
-        $PROFILE_STAGE \
+            # Set profile stage
+            PROFILE_STAGE="--profile-stage=decode" # Can be either all, prefill or decode
+            
+            # Set profile output dir
+            local traces_dir=${DOCKER_RESULTS_DIR}/${model_dir}/${TRACES_DIR}
+            export SGLANG_TORCH_PROFILER_DIR="${traces_dir}/sgl_trace_tp__${num_gpus}_batch__${concurrency}_isl__${input_len}_osl__${output_len}"
+            
+            set +x
 
+            # Create traces/profile dirs (if needed)
+            create_dir_if_missing ${traces_dir}
+            create_dir_if_missing ${SGLANG_TORCH_PROFILER_DIR}
+            
+        fi
+
+        # Run
+        run python -m sglang.bench_one_batch \
+            --model-path ${model} \
+            --tp $num_gpus \
+            --batch ${concurrency} \
+            --input-len ${input_len} \
+            --output-len ${output_len} \
+            --result-filename ${output_dir}/sgl_bench_tp__${num_gpus}_batch__${concurrency}_isl__${input_len}_osl__${output_len}.json \
+            $PROFILE_FLAG \
+            $PROFILE_ACTS \
+            $PROFILE_STAGE \
+            
+    done
 done
 

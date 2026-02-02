@@ -3,12 +3,4 @@
 source utils.sh
 source sgl/sgl_config.sh
 
-# Create dirs
-create_dir_if_missing ${RESULTS_DIR}
-create_dir_if_missing ${CUR_RESULTS_DIR}
-
-log_info "Clean directory: ${CUR_RESULTS_DIR}"
-rm -rf ${CUR_RESULTS_DIR}/*
-
-create_dir_if_missing ${CUR_RESULTS_DIR}/${MODEL_DIR}
-create_dir_if_missing ${CUR_RESULTS_DIR}/${MODEL_DIR}/${TRACES_DIR}
+create_result_dirs ${DOCKER_RESULTS_DIR}
