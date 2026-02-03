@@ -1,43 +1,84 @@
 #!/bin/bash
 
-if [[ -z "${1:-}" ]]; then
-  log_error "Missing config argument. For example, use "dsr1_fp4_b200" to execute the config_dsr1_fp4_b200.sh mode"
-  exit 1
-fi
+source common.sh
+source profile_config.sh
 
-source utils.sh
-source vllm/vllm_config_$1.sh
+create_clean_dir ${VLLM_DOCKER_RESULTS_DIR}
 
-export ATTN_BACKEND=""
-if [[ -n "$VLLM_ATTN_BACKEND" ]]; then  
-  log_info "Set attn backend to ${VLLM_ATTN_BACKEND}"
-  export ATTN_BACKEND="--attention-backend ${VLLM_ATTN_BACKEND}"
-fi
-
+# TODO: FIX
 export PROFILE=""
 # export PROFILE="--profile"
 
-log_info "Run bench:"
-for CONCURRENCY in $CONCURRENCY_LIST; do
-    ((NUM_REQUESTS = CONCURRENCY * 4))
+log_info "Run profiles:"
+
+for p in "${PROFILES[@]}"; do
+    declare -n profile="$p"
+    model=${profile[model]}
+    gpu_ids=${profile[gpu_ids]}
+    input_len=${profile[input_len]}
+    output_len=${profile[output_len]}
+    log_info "  Profiling:"
+    log_info "    model      = ${model}"
+    log_info "    gpu_ids    = ${gpu_ids}"
+    log_info "    input_len  = ${input_len}"
+    log_info "    output_len = ${output_len}"
+
+    num_gpus=$(echo "${gpu_ids}" | awk -F',' '{print NF}')
+    model_dir=$(echo "${model}" | sed 's/\//__/g')
+
+    output_dir=${VLLM_DOCKER_RESULTS_DIR}/${model_dir}
+    create_dir_if_missing ${output_dir}
     
-    log_info "  Run iter:"
-    log_info "    CONCURRENCY = ${CONCURRENCY}"
+    for concurrency in ${PROFILE_CONCURRENCIES}; do
+        (
+            set -euo pipefail
 
-    run vllm bench throughput \
-        --disable-log-requests \
-        --async-engine \
-        --backend vllm \
-        --model ${MODEL} \
-        ${ATTN_BACKEND} \
-        ${PROFILE} \
-        --tensor-parallel-size ${NUM_GPUS} \
-        --dataset-name random \
-        --random-input-len ${INPUT_LEN} \
-        --random-output-len ${OUTPUT_LEN} \
-        --max-num-seqs ${CONCURRENCY} \
-        --num-prompts ${NUM_REQUESTS} \
-        --output-json ${VLLM_RESULTS_DIR}/${MODEL_DIR}/vllm_bench_tp__${NUM_GPUS}_batch__${CONCURRENCY}_isl__${INPUT_LEN}_osl__${OUTPUT_LEN}.json
+            log_info "      Run concurrency = ${concurrency}"
+            
+            ((num_requests = concurrency * 4))
+            
+            # Set extra env vars
+            mode=""
+            if [[ -v profile[vllm_mode] && -n "${profile[vllm_mode]}" ]]; then
+                mode=${profile[vllm_mode]}
+                log_info "Set VLLM MODE = ${mode}"
+                source "${VLLM}/${VLLM}_mode_${mode}.sh"
+            fi
 
+            # Set attn backend
+            attn_backend=""
+            if [[ -v VLLM_ATTN_BACKEND && -n "$VLLM_ATTN_BACKEND" ]]; then
+                log_info "Set attn backend to ${VLLM_ATTN_BACKEND}"
+                attn_backend="--attention-backend ${VLLM_ATTN_BACKEND}"
+            fi
+            
+            output_file="$(
+                make_output_filename \
+                    ${VLLM} \
+                    ${output_dir} \
+                    ${num_gpus} \
+                    ${concurrency} \
+                    ${input_len} \
+                    ${output_len} \
+                    ${mode}
+                )"
+   
+            run vllm bench throughput \
+                --disable-log-requests \
+                --async-engine \
+                --backend vllm \
+                --model ${model} \
+                ${attn_backend} \
+                ${PROFILE} \
+                --tensor-parallel-size ${num_gpus} \
+                --dataset-name random \
+                --random-input-len ${input_len} \
+                --random-output-len ${output_len} \
+                --max-num-seqs ${concurrency} \
+                --num-prompts ${num_requests} \
+                --output-json ${output_file} \
+        
+        )
+    done
 done
 

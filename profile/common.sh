@@ -1,3 +1,4 @@
+source gen_config.sh
 
 _log() {
   local level="$1"
@@ -102,8 +103,9 @@ _run_docker() {
     --env "HF_HUB_CACHE=${DOCKER_HF_HUB_CACHE}" \
     -p ${DOCKER_PORT}:${DOCKER_PORT} \
     --name ${name} \
+    --entrypoint /bin/bash \
     ${image} \
-    bash -c "cd ${DOCKER_PROFILE_DIR}; time ${cmd}"
+    -c "cd ${DOCKER_PROFILE_DIR}; time ${cmd}"
 
 }
 
@@ -127,17 +129,43 @@ run_docker() {
   
   remove_docker_if_exists $name
 
-  _run_docker ${name} ${image} "./${framework}/${framework}_run.sh" 
+  _run_docker ${name} ${image} "./${framework}/${framework}_bench.sh" 
 }
 
-create_result_dirs() {
-  local result_dirs="$1"
-  
-  create_dir_if_missing ${result_dirs}
+create_clean_dir() {
+  local dir="$1"
 
-  log_info "Clean directory: ${result_dirs}"
-  rm -rf ${result_dirs}/*
+  create_dir_if_missing ${dir}
 
-  create_dir_if_missing ${result_dirs}/${DATASETS_DIR}
-  
+  log_info "Cleaning directory: ${dir}"
+  rm -rf ${dir}/*
+
+}
+
+make_output_filename() {
+  local framework="$1"
+  local output_dir="$2"
+  local num_gpus="$3"
+  local concurrency="$4"
+  local input_len="$5"
+  local output_len="$6"
+  local mode="${7:-}"
+
+  # Validate required parameters
+  if [[ -z "$framework" || -z "$output_dir" || -z "$num_gpus" || -z "$concurrency" || -z "$input_len" || -z "$output_len" ]]; then
+    echo "Error: missing required parameter" >&2
+    echo "Usage: make_output_filename <framework> <output_dir> <num_gpus> <concurrency> <input_len> <output_len> [mode]" >&2
+    return 1
+  fi
+
+  local filename
+  filename="${output_dir}/${framework}_bench_tp_${num_gpus}_batch_${concurrency}_isl_${input_len}_osl_${output_len}"
+
+  if [[ -n "$mode" ]]; then
+    filename+="_mode_${mode}"
+  fi
+
+  filename+=".json"
+
+  echo "$filename"
 }

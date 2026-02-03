@@ -1,4 +1,6 @@
 #!/bin/bash
-source sgl/sgl_config.sh
 
-run_docker sgl ${DOCKER_IMAGE}
+source utils.sh
+source profile_config.sh
+
+run_docker ${SGL} ${SGL_DOCKER_IMAGE}
