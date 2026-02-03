@@ -83,7 +83,7 @@ for p in "${PROFILES[@]}"; do
                 )"
     
             # Run
-            run python -m sglang.bench_one_batch \
+            run env CUDA_VISIBLE_DEVICES=${gpu_ids} python -m sglang.bench_one_batch \
                 --model-path ${model} \
                 --tp $num_gpus \
                 --batch ${concurrency} \

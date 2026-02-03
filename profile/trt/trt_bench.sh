@@ -71,8 +71,10 @@ for p in "${PROFILES[@]}"; do
                 ${output_len} \
                 ${mode}
             )"
-   
-        $PROFILE run trtllm-bench \
+    
+        #$PROFILE # TODO: FIX
+
+        run env CUDA_VISIBLE_DEVICES=${gpu_ids} trtllm-bench \
             --model ${model} \
             throughput \
             --dataset ${datasets_file} \

@@ -62,8 +62,8 @@ for p in "${PROFILES[@]}"; do
                     ${output_len} \
                     ${mode}
                 )"
-   
-            run vllm bench throughput \
+
+            run env CUDA_VISIBLE_DEVICES=${gpu_ids} vllm bench throughput \
                 --disable-log-requests \
                 --async-engine \
                 --backend vllm \

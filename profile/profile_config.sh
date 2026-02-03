@@ -7,10 +7,13 @@ TRT_DOCKER_IMAGE=nvcr.io/nvidia/tensorrt-llm/release:1.3.0rc0
 # GPU
 GPU_TYPE=${B200}
 
+GPU_IDS_4="4,5,6,7"
+GPU_IDS_2="4,5"
+
 # Profiles
 declare -A DSR1_NVFP4_DECODE_ONLY=(
   [model]="nvidia/DeepSeek-R1-NVFP4"
-  [gpu_ids]="0,1,2,3"
+  [gpu_ids]=${GPU_IDS_4}
   [input_len]=4
   [output_len]=1024
   [vllm_mode]="moe_fp4_trtllm_fa_mla_${GPU_TYPE}"
@@ -20,7 +23,7 @@ declare -A DSR1_NVFP4_DECODE_ONLY=(
 
 declare -A QWEN3_235B_A22B_NVFP4_DECODE_ONLY=(
   [model]="nvidia/Qwen3-235B-A22B-NVFP4"
-  [gpu_ids]="0,1"
+  [gpu_ids]=${GPU_IDS_2}
   [input_len]=4
   [output_len]=1024
   [vllm_mode]="moe_fp4_trtllm_${GPU_TYPE}"
