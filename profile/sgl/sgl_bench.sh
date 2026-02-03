@@ -81,7 +81,13 @@ for p in "${PROFILES[@]}"; do
                     ${output_len} \
                     ${mode}
                 )"
-    
+
+            # This will speedup capture for low batch sizes
+            CUDA_GRAPH_FLAG=""
+            if (( concurrency < 64 )); then
+                CUDA_GRAPH_FLAG="--cuda-graph-max-bs=64"
+            fi
+
             # Run
             run env CUDA_VISIBLE_DEVICES=${gpu_ids} python -m sglang.bench_one_batch \
                 --model-path ${model} \
@@ -90,9 +96,11 @@ for p in "${PROFILES[@]}"; do
                 --input-len ${input_len} \
                 --output-len ${output_len} \
                 --result-filename ${output_file} \
+                $CUDA_GRAPH_FLAG \
                 $PROFILE_FLAG \
                 $PROFILE_ACTS \
                 $PROFILE_STAGE \
+                
         )    
     done
 done
