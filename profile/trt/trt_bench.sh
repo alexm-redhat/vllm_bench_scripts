@@ -104,7 +104,7 @@ for p in "${PROFILES[@]}"; do
                 -o ${trace_file_prefix}"
         fi
 
-
+        # Run
         run env CUDA_VISIBLE_DEVICES=${gpu_ids} $profile_prefix trtllm-bench \
             --model ${model} \
             throughput \
