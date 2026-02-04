@@ -142,9 +142,9 @@ create_clean_dir() {
 
 }
 
-make_output_filename() {
+make_test_filename() {
   local framework="$1"
-  local output_dir="$2"
+  local model="$2"
   local num_gpus="$3"
   local concurrency="$4"
   local input_len="$5"
@@ -152,20 +152,85 @@ make_output_filename() {
   local mode="${7:-}"
 
   # Validate required parameters
-  if [[ -z "$framework" || -z "$output_dir" || -z "$num_gpus" || -z "$concurrency" || -z "$input_len" || -z "$output_len" ]]; then
+  if [[ -z "$framework" || -z "$model" || -z "$num_gpus" || -z "$concurrency" || -z "$input_len" || -z "$output_len" ]]; then
     echo "Error: missing required parameter" >&2
-    echo "Usage: make_output_filename <framework> <output_dir> <num_gpus> <concurrency> <input_len> <output_len> [mode]" >&2
+    echo "Usage: make_test_filename <framework> <model> <num_gpus> <concurrency> <input_len> <output_len> [mode]" >&2
     return 1
   fi
 
   local filename
-  filename="${output_dir}/${framework}_bench_tp_${num_gpus}_batch_${concurrency}_isl_${input_len}_osl_${output_len}"
+  filename="${framework}-${model}-tp_${num_gpus}-isl_${input_len}-osl_${output_len}-b_${concurrency}"
 
   if [[ -n "$mode" ]]; then
-    filename+="_mode_${mode}"
+    filename+="-mode_${mode}"
   fi
 
-  filename+=".json"
-
   echo "$filename"
+}
+
+make_result_filename() {
+  local output_dir="$1"
+  local test_filename="$2"
+
+  # Validate required parameters
+  if [[ -z "$output_dir" || -z "$test_filename" ]]; then
+    echo "Error: missing required parameter" >&2
+    echo "Usage: make_result_filename <output_dir> <test_filename> " >&2
+    return 1
+  fi
+
+  echo "${output_dir}/bench-${test_filename}.json"
+}
+
+make_trace_dirname() {
+  local output_dir="$1"
+  local test_filename="$2"
+
+  # Validate required parameters
+  if [[ -z "$output_dir" || -z "$test_filename" ]]; then
+    echo "Error: missing required parameter" >&2
+    echo "Usage: make_trace_dirname <output_dir> <test_filename> " >&2
+    return 1
+  fi
+
+  echo "${output_dir}/trace-${test_filename}"
+}
+
+calc_start_iter() {
+  if [[ $# -ne 3 ]]; then
+    echo "Usage: calc_start_iter <num_warmups> <num_waves> <output_len>" >&2
+    return 1
+  fi
+
+  local num_warmups="$1"
+  local num_waves="$2"
+  local output_len="$3"
+
+  # Validate integers
+  if ! [[ "$num_warmups" =~ ^[0-9]+$ && \
+          "$num_waves"   =~ ^[0-9]+$ && \
+          "$output_len"  =~ ^[0-9]+$ ]]; then
+    echo "Error: all arguments must be non-negative integers" >&2
+    return 1
+  fi
+
+  echo $(( (num_warmups * output_len) + ((num_waves / 2) * output_len) + (output_len / 2) ))
+}
+
+calc_finish_iter() {
+  if [[ $# -ne 2 ]]; then
+    echo "Usage: calc_finish_iter <start_iter> <offset>" >&2
+    return 1
+  fi
+
+  local start_iter="$1"
+  local offset="$2"
+
+  # Validate integers
+  if ! [[ "$start_iter" =~ ^[0-9]+$ && "$offset" =~ ^[0-9]+$ ]]; then
+    echo "Error: start_iter and offset must be non-negative integers" >&2
+    return 1
+  fi
+
+  echo $(( start_iter + offset ))
 }

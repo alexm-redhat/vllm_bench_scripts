@@ -21,23 +21,23 @@ declare -A DSR1_NVFP4_DECODE_ONLY=(
   [trt_mode]="moe_trtllm_${GPU_TYPE}"
 )
 
-declare -A QWEN3_235B_A22B_NVFP4_DECODE_ONLY=(
-  [model]="nvidia/Qwen3-235B-A22B-NVFP4"
-  [gpu_ids]=${GPU_IDS_2}
-  [input_len]=4
-  [output_len]=1024
-  [vllm_mode]="moe_fp4_trtllm_${GPU_TYPE}"
-  [sgl_mode]="empty"
-  [trt_mode]="moe_trtllm_${GPU_TYPE}"
-)
+# declare -A QWEN3_235B_A22B_NVFP4_DECODE_ONLY=(
+#   [model]="nvidia/Qwen3-235B-A22B-NVFP4"
+#   [gpu_ids]=${GPU_IDS_2}
+#   [input_len]=4
+#   [output_len]=1024
+#   [vllm_mode]="moe_fp4_trtllm_${GPU_TYPE}"
+#   [sgl_mode]="empty"
+#   [trt_mode]="moe_trtllm_${GPU_TYPE}"
+# )
 
-PROFILES=(DSR1_NVFP4_DECODE_ONLY QWEN3_235B_A22B_NVFP4_DECODE_ONLY)
+PROFILES=(DSR1_NVFP4_DECODE_ONLY) # QWEN3_235B_A22B_NVFP4_DECODE_ONLY)
 
 # Batch sizes
-PROFILE_CONCURRENCIES="1 16"
+PROFILE_CONCURRENCIES="1" # 16"
 
 # Profile on/off
 VLLM_ENABLE_PROFILE=0
 SGL_ENABLE_PROFILE=0
-TRT_ENABLE_PROFILE=0
+TRT_ENABLE_PROFILE=1
 

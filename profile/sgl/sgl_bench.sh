@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source common.sh
+source utils.sh
 source profile_config.sh
 
 create_clean_dir ${SGL_DOCKER_RESULTS_DIR}
@@ -20,9 +20,9 @@ for p in "${PROFILES[@]}"; do
     log_info "    output_len = ${output_len}"
 
     num_gpus=$(echo "${gpu_ids}" | awk -F',' '{print NF}')
-    model_dir=$(echo "${model}" | sed 's/\//__/g')
+    model_dirname=$(echo "${model}" | sed 's/\//__/g')
 
-    output_dir=${SGL_DOCKER_RESULTS_DIR}/${model_dir}
+    output_dir=${SGL_DOCKER_RESULTS_DIR}/${model_dirname}
     create_dir_if_missing ${output_dir}
     
     for concurrency in ${PROFILE_CONCURRENCIES}; do
@@ -31,7 +31,7 @@ for p in "${PROFILES[@]}"; do
             
             log_info "      Run concurrency = ${concurrency}"
             
-            ((num_requests = concurrency * 4))
+            ((num_requests = concurrency * NUM_WAVES))
 
             # Process profile args (if needed)
             PROFILE_FLAG=""
@@ -71,16 +71,22 @@ for p in "${PROFILES[@]}"; do
                 source "${SGL}/${SGL}_mode_${mode}.sh"
             fi
 
-            output_file="$(
-                make_output_filename \
+            test_filename="$(
+                make_test_filename \
                     ${SGL} \
-                    ${output_dir} \
+                    ${model_dirname} \
                     ${num_gpus} \
                     ${concurrency} \
                     ${input_len} \
                     ${output_len} \
                     ${mode}
                 )"
+            result_filename="$(
+                make_result_filename \
+                    ${output_dir} \
+                    ${test_filename}
+                )"
+            
 
             # This will speedup capture for low batch sizes
             CUDA_GRAPH_FLAG=""
@@ -95,7 +101,7 @@ for p in "${PROFILES[@]}"; do
                 --batch ${concurrency} \
                 --input-len ${input_len} \
                 --output-len ${output_len} \
-                --result-filename ${output_file} \
+                --result-filename ${result_filename} \
                 $CUDA_GRAPH_FLAG \
                 $PROFILE_FLAG \
                 $PROFILE_ACTS \

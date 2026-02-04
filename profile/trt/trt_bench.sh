@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-source common.sh
+source utils.sh
 source profile_config.sh
 
 create_clean_dir ${TRT_DOCKER_RESULTS_DIR}
@@ -21,9 +21,9 @@ for p in "${PROFILES[@]}"; do
     log_info "    output_len = ${output_len}"
 
     num_gpus=$(echo "${gpu_ids}" | awk -F',' '{print NF}')
-    model_dir=$(echo "${model}" | sed 's/\//__/g')
+    model_dirname=$(echo "${model}" | sed 's/\//__/g')
 
-    output_dir=${TRT_DOCKER_RESULTS_DIR}/${model_dir}
+    output_dir=${TRT_DOCKER_RESULTS_DIR}/${model_dirname}
     create_dir_if_missing ${output_dir}
 
     datasets_dir=${output_dir}/${DATASETS_DIR}
@@ -48,7 +48,7 @@ for p in "${PROFILES[@]}"; do
     for concurrency in ${PROFILE_CONCURRENCIES}; do
         log_info "      Run concurrency = ${concurrency}"
         
-        ((num_requests = concurrency * 4))
+        ((num_requests = concurrency * NUM_WAVES))
         
         # Set extra options
         mode=""
@@ -61,20 +61,51 @@ for p in "${PROFILES[@]}"; do
             yaml_flag="--extra_llm_api_options ${yaml_file}"
         fi
         
-        output_file="$(
-            make_output_filename \
-                ${TRT} \
-                ${output_dir} \
-                ${num_gpus} \
-                ${concurrency} \
-                ${input_len} \
-                ${output_len} \
-                ${mode}
-            )"
-    
-        #$PROFILE # TODO: FIX
+        test_filename="$(
+                make_test_filename \
+                    ${TRT} \
+                    ${model_dirname} \
+                    ${num_gpus} \
+                    ${concurrency} \
+                    ${input_len} \
+                    ${output_len} \
+                    ${mode}
+                )"
+        result_filename="$(
+                make_result_filename \
+                    ${output_dir} \
+                    ${test_filename}
+                )"
+        
+        # Set profile env vars
+        profile_prefix=""
+        if [[ -v TRT_ENABLE_PROFILE && "$TRT_ENABLE_PROFILE" == "1" ]]; then
+            log_info "TRT profile is enabled."
+            
+            start_iter=$(calc_start_iter ${NUM_WARMUPS} ${NUM_WAVES} ${output_len})
+            finish_iter=$(calc_finish_iter ${start_iter} ${NUM_TRACE_ITERS})
 
-        run env CUDA_VISIBLE_DEVICES=${gpu_ids} trtllm-bench \
+            export TLLM_PROFILE_START_STOP="${start_iter}-${finish_iter}"
+            log_info "    Set TLLM_PROFILE_START_STOP=${TLLM_PROFILE_START_STOP}"
+
+            trace_dirname="$(
+                make_trace_dirname \
+                    ${output_dir} \
+                    ${test_filename}
+                )"
+            create_dir_if_missing ${trace_dirname}
+            trace_file_prefix="${trace_dirname}/trace-${test_filename}"
+
+            profile_prefix="nsys profile \
+                -t cuda,nvtx \
+                -c cudaProfilerApi \
+                --cuda-graph-trace=node \
+                --trace-fork-before-exec=true \
+                -o ${trace_file_prefix}"
+        fi
+
+
+        run env CUDA_VISIBLE_DEVICES=${gpu_ids} $profile_prefix trtllm-bench \
             --model ${model} \
             throughput \
             --dataset ${datasets_file} \
@@ -82,10 +113,19 @@ for p in "${PROFILES[@]}"; do
             --concurrency ${concurrency} \
             --tp ${num_gpus} \
             --eos_id -1 \
-            --report_json ${output_file} \
+            --report_json ${result_filename} \
             --streaming \
+            --warmup $NUM_WARMUPS \
             ${yaml_flag} \
-            
+        
+        # Convert nsys binary file to SQLite format (python can read it)
+        if [[ -v TRT_ENABLE_PROFILE && "$TRT_ENABLE_PROFILE" == "1" ]]; then
+            run nsys export \
+                --type=sqlite \
+                --output="${trace_file_prefix}.sqlite" \
+                ${trace_file_prefix}.nsys-rep
+        fi
+        
     done
 done
 

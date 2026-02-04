@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source common.sh
+source utils.sh
 source profile_config.sh
 
 create_clean_dir ${VLLM_DOCKER_RESULTS_DIR}
@@ -24,9 +24,9 @@ for p in "${PROFILES[@]}"; do
     log_info "    output_len = ${output_len}"
 
     num_gpus=$(echo "${gpu_ids}" | awk -F',' '{print NF}')
-    model_dir=$(echo "${model}" | sed 's/\//__/g')
+    model_dirname=$(echo "${model}" | sed 's/\//__/g')
 
-    output_dir=${VLLM_DOCKER_RESULTS_DIR}/${model_dir}
+    output_dir=${VLLM_DOCKER_RESULTS_DIR}/${model_dirname}
     create_dir_if_missing ${output_dir}
     
     for concurrency in ${PROFILE_CONCURRENCIES}; do
@@ -35,7 +35,7 @@ for p in "${PROFILES[@]}"; do
 
             log_info "      Run concurrency = ${concurrency}"
             
-            ((num_requests = concurrency * 4))
+            ((num_requests = concurrency * NUM_WAVES))
             
             # Set extra env vars
             mode=""
@@ -52,17 +52,22 @@ for p in "${PROFILES[@]}"; do
                 attn_backend="--attention-backend ${VLLM_ATTN_BACKEND}"
             fi
             
-            output_file="$(
-                make_output_filename \
-                    ${VLLM} \
-                    ${output_dir} \
+            test_filename="$(
+                make_test_filename \
+                    ${SGL} \
+                    ${model_dirname} \
                     ${num_gpus} \
                     ${concurrency} \
                     ${input_len} \
                     ${output_len} \
                     ${mode}
                 )"
-
+            result_filename="$(
+                make_result_filename \
+                    ${output_dir} \
+                    ${test_filename}
+                )"
+            
             run env CUDA_VISIBLE_DEVICES=${gpu_ids} vllm bench throughput \
                 --disable-log-requests \
                 --async-engine \
@@ -76,7 +81,7 @@ for p in "${PROFILES[@]}"; do
                 --random-output-len ${output_len} \
                 --max-num-seqs ${concurrency} \
                 --num-prompts ${num_requests} \
-                --output-json ${output_file} \
+                --output-json ${result_filename} \
         
         )
     done
