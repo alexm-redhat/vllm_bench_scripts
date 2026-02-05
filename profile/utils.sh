@@ -90,6 +90,16 @@ _run_docker() {
     return 1
   fi
   
+  nsys_path=$(readlink -f "$(which nsys)") || {
+    echo "nsys not found in PATH" >&2
+    exit 1
+  }
+
+  nsys_bin_dir=$(dirname "$nsys_path")
+  nsys_install_dir=$(dirname "$nsys_bin_dir")
+
+  echo "nsys_install_dir=${nsys_install_dir}"
+  
   docker run \
     -it \
     --rm \
@@ -98,6 +108,8 @@ _run_docker() {
     --ulimit stack=67108864 \
     --shm-size 32g \
     --gpus=all \
+    -v "$nsys_install_dir":/nsys:ro \
+    -e PATH="/nsys/bin:$PATH" \
     -v ${PROFILE_DIR}:${DOCKER_PROFILE_DIR} \
     -v ${HF_HUB_CACHE}:${DOCKER_HF_HUB_CACHE} \
     --env "HF_HUB_CACHE=${DOCKER_HF_HUB_CACHE}" \
@@ -233,4 +245,16 @@ calc_finish_iter() {
   fi
 
   echo $(( start_iter + offset ))
+}
+
+is_vllm_profile_enabled() {
+  [[ ${VLLM_ENABLE_PROFILE:-0} == 1 ]]
+}
+
+is_sgl_profile_enabled() {
+  [[ ${SGL_ENABLE_PROFILE:-0} == 1 ]]
+}
+
+is_trt_profile_enabled() {
+  [[ ${TRT_ENABLE_PROFILE:-0} == 1 ]]
 }

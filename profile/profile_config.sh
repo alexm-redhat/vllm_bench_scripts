@@ -7,8 +7,10 @@ TRT_DOCKER_IMAGE=nvcr.io/nvidia/tensorrt-llm/release:1.3.0rc0
 # GPU
 GPU_TYPE=${B200}
 
-GPU_IDS_4="4,5,6,7"
-GPU_IDS_2="4,5"
+GPU_IDS_4="0,1,2,3"
+GPU_IDS_2="0,1"
+# GPU_IDS_4="4,5,6,7"
+# GPU_IDS_2="4,5"
 
 # Profiles
 declare -A DSR1_NVFP4_DECODE_ONLY=(
@@ -37,7 +39,16 @@ PROFILES=(DSR1_NVFP4_DECODE_ONLY) # QWEN3_235B_A22B_NVFP4_DECODE_ONLY)
 PROFILE_CONCURRENCIES="1" # 16"
 
 # Profile on/off
-VLLM_ENABLE_PROFILE=0
+VLLM_ENABLE_PROFILE=1
 SGL_ENABLE_PROFILE=1
 TRT_ENABLE_PROFILE=1
+
+
+NSYS_DEFAULT_FLAGS=" \
+  -t cuda,nvtx \
+  -c cudaProfilerApi \
+  --cuda-graph-trace=node \
+  --cuda-event-trace=false \
+  --trace-fork-before-exec=true \
+"
 

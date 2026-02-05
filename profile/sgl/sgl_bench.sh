@@ -63,13 +63,12 @@ for p in "${PROFILES[@]}"; do
                 CUDA_GRAPH_FLAG="--cuda-graph-max-bs=64"
             fi
 
-            #####
             # Set profile env vars
             profile_flag=""
             profile_acts=""
             profile_stage=""
             profile_prefix=""
-            if [[ -v SGL_ENABLE_PROFILE && "$SGL_ENABLE_PROFILE" == "1" ]]; then
+            if is_sgl_profile_enabled; then
                 log_info "SGL profile is enabled."
                 
                 # Enable profile
@@ -89,15 +88,8 @@ for p in "${PROFILES[@]}"; do
                 create_dir_if_missing ${trace_dirname}
                 trace_file_prefix="${trace_dirname}/trace-${test_filename}"
 
-                profile_prefix="nsys profile \
-                    -t cuda,nvtx \
-                    -c cudaProfilerApi \
-                    --cuda-graph-trace=node \
-                    --trace-fork-before-exec=true \
-                    -o ${trace_file_prefix}"
+                profile_prefix="nsys profile ${NSYS_DEFAULT_FLAGS} -o ${trace_file_prefix}"
             fi
-
-            #####
 
             # Run
             run env CUDA_VISIBLE_DEVICES=${gpu_ids} $profile_prefix python -m sglang.bench_one_batch \
@@ -113,7 +105,7 @@ for p in "${PROFILES[@]}"; do
                 $profile_stage \
 
             # Convert nsys binary file to SQLite format (python can read it)
-            if [[ -v SGL_ENABLE_PROFILE && "$SGL_ENABLE_PROFILE" == "1" ]]; then
+            if is_sgl_profile_enabled; then
                 run nsys export \
                     --type=sqlite \
                     --output="${trace_file_prefix}.sqlite" \

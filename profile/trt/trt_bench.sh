@@ -79,7 +79,7 @@ for p in "${PROFILES[@]}"; do
         
         # Set profile env vars
         profile_prefix=""
-        if [[ -v TRT_ENABLE_PROFILE && "$TRT_ENABLE_PROFILE" == "1" ]]; then
+        if is_trt_profile_enabled; then
             log_info "TRT profile is enabled."
             
             start_iter=$(calc_start_iter ${NUM_WARMUPS} ${NUM_WAVES} ${output_len})
@@ -96,12 +96,7 @@ for p in "${PROFILES[@]}"; do
             create_dir_if_missing ${trace_dirname}
             trace_file_prefix="${trace_dirname}/trace-${test_filename}"
 
-            profile_prefix="nsys profile \
-                -t cuda,nvtx \
-                -c cudaProfilerApi \
-                --cuda-graph-trace=node \
-                --trace-fork-before-exec=true \
-                -o ${trace_file_prefix}"
+            profile_prefix="nsys profile ${NSYS_DEFAULT_FLAGS} -o ${trace_file_prefix}"
         fi
 
         # Run
@@ -119,7 +114,7 @@ for p in "${PROFILES[@]}"; do
             ${yaml_flag} \
         
         # Convert nsys binary file to SQLite format (python can read it)
-        if [[ -v TRT_ENABLE_PROFILE && "$TRT_ENABLE_PROFILE" == "1" ]]; then
+        if is_trt_profile_enabled; then
             run nsys export \
                 --type=sqlite \
                 --output="${trace_file_prefix}.sqlite" \

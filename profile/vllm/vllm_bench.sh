@@ -54,7 +54,7 @@ for p in "${PROFILES[@]}"; do
             
             test_filename="$(
                 make_test_filename \
-                    ${SGL} \
+                    ${VLLM} \
                     ${model_dirname} \
                     ${num_gpus} \
                     ${concurrency} \
@@ -68,13 +68,41 @@ for p in "${PROFILES[@]}"; do
                     ${test_filename}
                 )"
             
-            run env CUDA_VISIBLE_DEVICES=${gpu_ids} vllm bench throughput \
+            # Set profile vars
+            profile_flag=""
+            profile_json=""
+            profile_prefix=""
+            if is_vllm_profile_enabled; then
+                log_info "VLLM profile is enabled."
+                
+                num_warmups=0
+                start_iter=$(calc_start_iter ${num_warmups} ${NUM_WAVES} ${output_len})
+
+                printf -v profiler_config_json \
+                    '{"profiler":"cuda","delay_iterations":%d,"max_iterations":%d}' \
+                    "$start_iter" "$NUM_TRACE_ITERS"
+
+                profile_flag="--profile"
+                profile_json="--profiler-config ${profiler_config_json}"
+                
+                trace_dirname="$(
+                    make_trace_dirname \
+                        ${output_dir} \
+                        ${test_filename}
+                    )"
+                create_dir_if_missing ${trace_dirname}
+                trace_file_prefix="${trace_dirname}/trace-${test_filename}"
+
+                profile_prefix="nsys profile ${NSYS_DEFAULT_FLAGS} -o ${trace_file_prefix}"
+            fi
+
+            # Run
+            run env CUDA_VISIBLE_DEVICES=${gpu_ids} ${profile_prefix} vllm bench throughput \
                 --disable-log-requests \
                 --async-engine \
                 --backend vllm \
                 --model ${model} \
                 ${attn_backend} \
-                ${PROFILE} \
                 --tensor-parallel-size ${num_gpus} \
                 --dataset-name random \
                 --random-input-len ${input_len} \
@@ -82,6 +110,16 @@ for p in "${PROFILES[@]}"; do
                 --max-num-seqs ${concurrency} \
                 --num-prompts ${num_requests} \
                 --output-json ${result_filename} \
+                ${profile_flag} \
+                ${profile_json} \
+            
+            # Convert nsys binary file to SQLite format (python can read it)
+            if is_vllm_profile_enabled; then
+                run nsys export \
+                    --type=sqlite \
+                    --output="${trace_file_prefix}.sqlite" \
+                    ${trace_file_prefix}.nsys-rep
+            fi
         
         )
     done
