@@ -33,36 +33,6 @@ for p in "${PROFILES[@]}"; do
             
             ((num_requests = concurrency * NUM_WAVES))
 
-            # Process profile args (if needed)
-            PROFILE_FLAG=""
-            PROFILE_ACTS=""
-            PROFILE_STAGE=""
-            export SGLANG_TORCH_PROFILER_DIR=""
-            if [[ -v ENABLE_PROFILE && "$ENABLE_PROFILE" == "1" ]]; then
-                log_info "Profile is enabled. Defining env vars."
-                set -x
-                
-                # Enable profile
-                PROFILE_FLAG="--profile"
-
-                # By default, torch profiler is used, enable this to use NSYS (TODO: Fix file placement)
-                # PROFILE_ACTS="--profile-activities CUDA_PROFILER"
-
-                # Set profile stage
-                PROFILE_STAGE="--profile-stage=decode" # Can be either all, prefill or decode
-                
-                # Set profile output dir
-                local traces_dir=${output_dir}/${TRACES_DIR}
-                export SGLANG_TORCH_PROFILER_DIR="${traces_dir}/sgl_trace_tp__${num_gpus}_batch__${concurrency}_isl__${input_len}_osl__${output_len}"
-                
-                set +x
-
-                # Create traces/profile dirs (if needed)
-                create_dir_if_missing ${traces_dir}
-                create_dir_if_missing ${SGLANG_TORCH_PROFILER_DIR}
-                
-            fi
-
             # Set extra env vars
             mode=""
             if [[ -v profile[sgl_mode] && -n "${profile[sgl_mode]}" ]]; then
@@ -86,7 +56,6 @@ for p in "${PROFILES[@]}"; do
                     ${output_dir} \
                     ${test_filename}
                 )"
-            
 
             # This will speedup capture for low batch sizes
             CUDA_GRAPH_FLAG=""
@@ -94,8 +63,44 @@ for p in "${PROFILES[@]}"; do
                 CUDA_GRAPH_FLAG="--cuda-graph-max-bs=64"
             fi
 
+            #####
+            # Set profile env vars
+            profile_flag=""
+            profile_acts=""
+            profile_stage=""
+            profile_prefix=""
+            if [[ -v SGL_ENABLE_PROFILE && "$SGL_ENABLE_PROFILE" == "1" ]]; then
+                log_info "SGL profile is enabled."
+                
+                # Enable profile
+                profile_flag="--profile"
+
+                # Use NSYS
+                profile_acts="--profile-activities CUDA_PROFILER"
+
+                # Set profile stage
+                profile_stage="--profile-stage=decode" # Can be either all, prefill or decode
+                
+                trace_dirname="$(
+                    make_trace_dirname \
+                        ${output_dir} \
+                        ${test_filename}
+                    )"
+                create_dir_if_missing ${trace_dirname}
+                trace_file_prefix="${trace_dirname}/trace-${test_filename}"
+
+                profile_prefix="nsys profile \
+                    -t cuda,nvtx \
+                    -c cudaProfilerApi \
+                    --cuda-graph-trace=node \
+                    --trace-fork-before-exec=true \
+                    -o ${trace_file_prefix}"
+            fi
+
+            #####
+
             # Run
-            run env CUDA_VISIBLE_DEVICES=${gpu_ids} python -m sglang.bench_one_batch \
+            run env CUDA_VISIBLE_DEVICES=${gpu_ids} $profile_prefix python -m sglang.bench_one_batch \
                 --model-path ${model} \
                 --tp $num_gpus \
                 --batch ${concurrency} \
@@ -103,9 +108,17 @@ for p in "${PROFILES[@]}"; do
                 --output-len ${output_len} \
                 --result-filename ${result_filename} \
                 $CUDA_GRAPH_FLAG \
-                $PROFILE_FLAG \
-                $PROFILE_ACTS \
-                $PROFILE_STAGE \
+                $profile_flag \
+                $profile_acts \
+                $profile_stage \
+
+            # Convert nsys binary file to SQLite format (python can read it)
+            if [[ -v SGL_ENABLE_PROFILE && "$SGL_ENABLE_PROFILE" == "1" ]]; then
+                run nsys export \
+                    --type=sqlite \
+                    --output="${trace_file_prefix}.sqlite" \
+                    ${trace_file_prefix}.nsys-rep
+            fi
                 
         )    
     done
