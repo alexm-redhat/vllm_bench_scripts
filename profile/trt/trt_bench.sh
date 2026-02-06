@@ -5,6 +5,7 @@ source utils.sh
 source profile_config.sh
 
 create_clean_dir ${TRT_DOCKER_RESULTS_DIR}
+write_run_metadata ${TRT_DOCKER_RESULTS_DIR} ${TRT_DOCKER_IMAGE}
 
 log_info "Run profiles:"
 
@@ -23,10 +24,10 @@ for p in "${PROFILES[@]}"; do
     num_gpus=$(echo "${gpu_ids}" | awk -F',' '{print NF}')
     model_dirname=$(echo "${model}" | sed 's/\//__/g')
 
-    output_dir=${TRT_DOCKER_RESULTS_DIR}/${model_dirname}
-    create_dir_if_missing ${output_dir}
+    model_dir=${TRT_DOCKER_RESULTS_DIR}/${model_dirname}
+    create_dir_if_missing ${model_dir}
 
-    datasets_dir=${output_dir}/${DATASETS_DIR}
+    datasets_dir=${model_dir}/${DATASETS_DIR}
     create_dir_if_missing ${datasets_dir}
 
     # Run prepare dataset
@@ -61,21 +62,44 @@ for p in "${PROFILES[@]}"; do
             yaml_flag="--extra_llm_api_options ${yaml_file}"
         fi
         
-        test_filename="$(
-                make_test_filename \
-                    ${TRT} \
-                    ${model_dirname} \
-                    ${num_gpus} \
-                    ${concurrency} \
-                    ${input_len} \
-                    ${output_len} \
-                    ${mode}
-                )"
+        # Generate test ID
+        test_name="$(
+            make_test_name \
+                ${TRT} \
+                ${model_dirname} \
+                ${num_gpus} \
+                ${concurrency} \
+                ${input_len} \
+                ${output_len} \
+                ${mode}
+            )"
+        
+        # Create test dir (for outputs)
+        test_dir="$(
+            make_test_dirname \
+                ${model_dir} \
+                ${test_name}
+            )"
+        create_dir_if_missing ${test_dir}
+        
+        # Create output filenames
         result_filename="$(
-                make_result_filename \
-                    ${output_dir} \
-                    ${test_filename}
-                )"
+            make_result_filename \
+                ${test_dir} \
+                ${test_name}
+            )"
+        
+        run_log_filename="$(
+            make_run_log_filename \
+                ${test_dir} \
+                ${test_name}
+            )"
+        
+        run_log_profile_filename="$(
+            make_run_log_profile_filename \
+                ${test_dir} \
+                ${test_name}
+            )"
         
         # Set profile env vars
         profile_prefix=""
@@ -90,15 +114,15 @@ for p in "${PROFILES[@]}"; do
 
             trace_file_prefix="$(
                 make_trace_file_prefix \
-                    ${output_dir} \
-                    ${test_filename}
+                    ${test_dir} \
+                    ${test_name}
                 )"
 
             profile_prefix="nsys profile ${NSYS_DEFAULT_FLAGS} -o ${trace_file_prefix}"
         fi
 
         # Run
-        run env CUDA_VISIBLE_DEVICES=${gpu_ids} $profile_prefix trtllm-bench \
+        run_cmd="trtllm-bench \
             --model ${model} \
             throughput \
             --dataset ${datasets_file} \
@@ -109,16 +133,25 @@ for p in "${PROFILES[@]}"; do
             --report_json ${result_filename} \
             --streaming \
             --warmup $NUM_WARMUPS \
-            ${yaml_flag} \
+            ${yaml_flag}"
         
-        # Convert nsys binary file to SQLite format (python can read it)
-        if is_trt_profile_enabled; then
-            run nsys export \
+        log_info "RUN NORMAL"
+        run_and_log ${run_log_filename} \
+            env CUDA_VISIBLE_DEVICES=${gpu_ids} \
+            ${run_cmd}
+            
+        if is_vllm_profile_enabled; then
+            log_info "RUN PROFILE"
+            run_and_log ${run_log_profile_filename} \
+                env CUDA_VISIBLE_DEVICES=${gpu_ids} \
+                ${profile_prefix} ${run_cmd} 
+
+            # Convert nsys binary file to SQLite format (python can read it)
+            nsys export \
                 --type=sqlite \
                 --output="${trace_file_prefix}.sqlite" \
                 ${trace_file_prefix}.nsys-rep
         fi
-        
     done
 done
 

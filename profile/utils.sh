@@ -26,6 +26,48 @@ log_debug() {
   _log DEBUG "$@"
 }
 
+write_run_metadata() {
+    local dir="$1"
+    local docker_image="$2"
+
+    if [[ -z "$dir" || -z "$docker_image" ]]; then
+        echo "Usage: write_run_metadata <dir> <docker_image>" >&2
+        return 1
+    fi
+
+    local outfile="${dir}/run_metadata.txt"
+    local timestamp
+    timestamp="$(date '+%Y-%m-%d %H:%M:%S %Z')"
+
+    # Explicitly use hostname command (due to docker)
+    local host_name
+    host_name="$(hostname 2>/dev/null || echo "unknown")"
+
+    local os_info="Unknown"
+    if [[ -f /etc/os-release ]]; then
+        os_info="$(grep '^PRETTY_NAME=' /etc/os-release | cut -d= -f2- | tr -d '"')"
+    else
+        os_info="$(uname -srv)"
+    fi
+
+    local gpu_info="No GPU detected"
+    if command -v nvidia-smi >/dev/null 2>&1; then
+        gpu_info="$(nvidia-smi --query-gpu=index,name --format=csv,noheader)"
+    fi
+
+    echo "RUN METADATA"
+    echo "============"
+
+    {
+        echo "Docker Image:      $docker_image"
+        echo "Execution Time:    $timestamp"
+        echo "Hostname:          $hostname"
+        echo "Operating System:  $os_info"
+        echo "GPU(s):"
+        echo "$gpu_info"
+    } | tee "$outfile"
+}
+
 create_dir_if_missing() {
   local dir="$1"
 
@@ -53,15 +95,20 @@ run_and_log() {
     local logfile="$1"
     shift
 
-    echo "RUN-CMD: $*"
-
     set -o pipefail
-
     set +e
-    "$@" 2>&1 | tee "$logfile"
-    local status=${PIPESTATUS[0]}
-    set -e
 
+    {
+        printf "RUN-CMD:"
+        printf " %q" "$@"
+        printf "\n"
+
+        "$@"
+    } 2>&1 | tee "$logfile"
+
+    local status=${PIPESTATUS[0]}
+
+    set -e
     return "$status"
 }
 
@@ -222,6 +269,20 @@ make_run_log_filename() {
   fi
 
   echo "${output_dir}/run-log-${test_filename}.txt"
+}
+
+make_run_log_profile_filename() {
+  local output_dir="$1"
+  local test_filename="$2"
+
+  # Validate required parameters
+  if [[ -z "$output_dir" || -z "$test_filename" ]]; then
+    echo "Error: missing required parameter" >&2
+    echo "Usage: make_run_log_filename <output_dir> <test_filename> " >&2
+    return 1
+  fi
+
+  echo "${output_dir}/run-log-profile-${test_filename}.txt"
 }
 
 make_trace_file_prefix() {

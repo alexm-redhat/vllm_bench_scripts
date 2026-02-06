@@ -19,7 +19,7 @@ declare -A DSR1_NVFP4_DECODE_ONLY=(
   [input_len]=4
   [output_len]=1024
   [vllm_mode]="moe_fp4_trtllm_fa_mla_${GPU_TYPE}"
-  [sgl_mode]="empty"
+  [sgl_mode]="none"
   [trt_mode]="moe_trtllm_${GPU_TYPE}"
 )
 
@@ -29,7 +29,7 @@ declare -A DSR1_NVFP4_DECODE_ONLY=(
 #   [input_len]=4
 #   [output_len]=1024
 #   [vllm_mode]="moe_fp4_trtllm_${GPU_TYPE}"
-#   [sgl_mode]="empty"
+#   [sgl_mode]="none"
 #   [trt_mode]="moe_trtllm_${GPU_TYPE}"
 # )
 

@@ -4,10 +4,7 @@ source utils.sh
 source profile_config.sh
 
 create_clean_dir ${VLLM_DOCKER_RESULTS_DIR}
-
-# TODO: FIX
-export PROFILE=""
-# export PROFILE="--profile"
+write_run_metadata ${VLLM_DOCKER_RESULTS_DIR} ${VLLM_DOCKER_IMAGE}
 
 log_info "Run profiles:"
 
@@ -85,6 +82,12 @@ for p in "${PROFILES[@]}"; do
                     ${test_name}
                 )"
             
+            run_log_profile_filename="$(
+                make_run_log_profile_filename \
+                    ${test_dir} \
+                    ${test_name}
+                )"
+            
             # Set profile vars (if enabled)
             profile_flag=""
             profile_json=""
@@ -133,7 +136,7 @@ for p in "${PROFILES[@]}"; do
             
             if is_vllm_profile_enabled; then
                 log_info "RUN PROFILE"
-                run_and_log ${run_log_filename} \
+                run_and_log ${run_log_profile_filename} \
                     env CUDA_VISIBLE_DEVICES=${gpu_ids} \
                     ${profile_prefix} ${run_cmd} ${profile_flag} ${profile_json}
 
