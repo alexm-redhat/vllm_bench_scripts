@@ -48,7 +48,7 @@ NSYS_DEFAULT_FLAGS=" \
   -t cuda,nvtx \
   -c cudaProfilerApi \
   --cuda-graph-trace=node \
-  --cuda-event-trace=false \
   --trace-fork-before-exec=true \
 "
+#--cuda-event-trace=false \
 

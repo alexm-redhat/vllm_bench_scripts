@@ -26,8 +26,8 @@ for p in "${PROFILES[@]}"; do
     num_gpus=$(echo "${gpu_ids}" | awk -F',' '{print NF}')
     model_dirname=$(echo "${model}" | sed 's/\//__/g')
 
-    output_dir=${VLLM_DOCKER_RESULTS_DIR}/${model_dirname}
-    create_dir_if_missing ${output_dir}
+    model_dir=${VLLM_DOCKER_RESULTS_DIR}/${model_dirname}
+    create_dir_if_missing ${model_dir}
     
     for concurrency in ${PROFILE_CONCURRENCIES}; do
         (
@@ -52,8 +52,9 @@ for p in "${PROFILES[@]}"; do
                 attn_backend="--attention-backend ${VLLM_ATTN_BACKEND}"
             fi
             
-            test_filename="$(
-                make_test_filename \
+            # Generate test ID
+            test_name="$(
+                make_test_name \
                     ${VLLM} \
                     ${model_dirname} \
                     ${num_gpus} \
@@ -62,13 +63,29 @@ for p in "${PROFILES[@]}"; do
                     ${output_len} \
                     ${mode}
                 )"
+            
+            # Create test dir (for outputs)
+            test_dir="$(
+                make_test_dirname \
+                    ${model_dir} \
+                    ${test_name}
+                )"
+            create_dir_if_missing ${test_dir}
+            
+            # Create output filenames
             result_filename="$(
                 make_result_filename \
-                    ${output_dir} \
-                    ${test_filename}
+                    ${test_dir} \
+                    ${test_name}
                 )"
             
-            # Set profile vars
+            run_log_filename="$(
+                make_run_log_filename \
+                    ${test_dir} \
+                    ${test_name}
+                )"
+            
+            # Set profile vars (if enabled)
             profile_flag=""
             profile_json=""
             profile_prefix=""
@@ -85,19 +102,17 @@ for p in "${PROFILES[@]}"; do
                 profile_flag="--profile"
                 profile_json="--profiler-config ${profiler_config_json}"
                 
-                trace_dirname="$(
-                    make_trace_dirname \
-                        ${output_dir} \
-                        ${test_filename}
+                trace_file_prefix="$(
+                    make_trace_file_prefix \
+                        ${test_dir} \
+                        ${test_name}
                     )"
-                create_dir_if_missing ${trace_dirname}
-                trace_file_prefix="${trace_dirname}/trace-${test_filename}"
-
+                
                 profile_prefix="nsys profile ${NSYS_DEFAULT_FLAGS} -o ${trace_file_prefix}"
             fi
 
             # Run
-            run env CUDA_VISIBLE_DEVICES=${gpu_ids} ${profile_prefix} vllm bench throughput \
+            run_cmd="vllm bench throughput \
                 --disable-log-requests \
                 --async-engine \
                 --backend vllm \
@@ -109,18 +124,25 @@ for p in "${PROFILES[@]}"; do
                 --random-output-len ${output_len} \
                 --max-num-seqs ${concurrency} \
                 --num-prompts ${num_requests} \
-                --output-json ${result_filename} \
-                ${profile_flag} \
-                ${profile_json} \
+                --output-json ${result_filename}"
             
-            # Convert nsys binary file to SQLite format (python can read it)
+            log_info "RUN NORMAL"
+            run_and_log ${run_log_filename} \
+                env CUDA_VISIBLE_DEVICES=${gpu_ids} \
+                ${run_cmd}
+            
             if is_vllm_profile_enabled; then
-                run nsys export \
+                log_info "RUN PROFILE"
+                run_and_log ${run_log_filename} \
+                    env CUDA_VISIBLE_DEVICES=${gpu_ids} \
+                    ${profile_prefix} ${run_cmd} ${profile_flag} ${profile_json}
+
+                # Convert nsys binary file to SQLite format (python can read it)
+                nsys export \
                     --type=sqlite \
                     --output="${trace_file_prefix}.sqlite" \
                     ${trace_file_prefix}.nsys-rep
             fi
-        
         )
     done
 done

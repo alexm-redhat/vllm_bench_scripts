@@ -88,13 +88,11 @@ for p in "${PROFILES[@]}"; do
             export TLLM_PROFILE_START_STOP="${start_iter}-${finish_iter}"
             log_info "    Set TLLM_PROFILE_START_STOP=${TLLM_PROFILE_START_STOP}"
 
-            trace_dirname="$(
-                make_trace_dirname \
+            trace_file_prefix="$(
+                make_trace_file_prefix \
                     ${output_dir} \
                     ${test_filename}
                 )"
-            create_dir_if_missing ${trace_dirname}
-            trace_file_prefix="${trace_dirname}/trace-${test_filename}"
 
             profile_prefix="nsys profile ${NSYS_DEFAULT_FLAGS} -o ${trace_file_prefix}"
         fi
